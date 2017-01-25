@@ -10,6 +10,12 @@
     <ClCompile Include="Trainer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="NotImplemetendException.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="IDXFile.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GenericFunctions.h">
@@ -18,7 +24,10 @@
     <ClInclude Include="Trainer.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="Data.h">
+    <ClInclude Include="NotImplemetendException.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="IDXFile.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,8 +38,5 @@
     <Filter Include="include">
       <UniqueIdentifier>{38a881ad-ecbe-4540-8952-df13d819e9a3}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="Example.cu" />
   </ItemGroup>
 </Project>

@@ -3,21 +3,26 @@
 class Trainer {
 public:
 	/**
-	\brief Create an object Trainer with GPU zero and a batchSize of 128.
+	\brief Call Trainer(int, int, float, int) with (0, 128, 0.01, 500).
 	*/
 	Trainer();
 	/**
-	*	\brief Create an object Trainer with GPU zero and a batchSize of 128.
-	*	\param zero - toto
-	*	\param one - titi
+	*	\brief .
+	*	\param GPUID - 
+	*	\param batchSize - 
+	*	\param learningRate - 
+	*	\param epochNumber - 
 	*/
 	Trainer(int, int, float, int); // GPUID, BatchSize
 	~Trainer();
 
 	/**
-	*	\brief Create an object Trainer with GPU zero and a batchSize of 128.
-	*	\param zero - toto
-	*	\param one - titi
+	*	\brief .
+	*	\param seqLength - 
+	*	\param data - 
+	*	\param output - 
+	*	\param trainingSpace - 
+	*	\param workspace - 
 	*/
 	void forwardTraining(int, float*, float*, void*, void*);
 private:

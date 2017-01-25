@@ -5,7 +5,7 @@
 #include "Trainer.h"
 #include "GenericFunctions.h"
 
-Trainer::Trainer() : Trainer(0, 128, 0.01, 500) {}
+Trainer::Trainer() : Trainer(0, 128, 0.01f, 500) {}
 
 Trainer::Trainer(int GPUID, int batchSize, float learningRate, int epochNumber) {
 	m_gpuid = GPUID;
@@ -28,7 +28,7 @@ Trainer::Trainer(int GPUID, int batchSize, float learningRate, int epochNumber) 
 	}
 	
 	//
-	// Setting Cuda device
+	// Setting CUDA device
 	//
 
 	std::cout << "Setting CudaDevice to " << m_gpuid << std::endl;
@@ -62,7 +62,7 @@ Trainer::~Trainer() {
 
 void Trainer::forwardTraining(int seqLength, float* data, float* output, void* trainingSpace, void* workspace)
 {
-	cudnnRNNForwardTraining(m_handle,
+	/*cudnnRNNForwardTraining(m_handle,
 		m_rnnDesc,
 		seqLength,
 		&m_dataTensor,
@@ -82,5 +82,5 @@ void Trainer::forwardTraining(int seqLength, float* data, float* output, void* t
 		workspace,
 		m_workspaceSize,
 		trainingSpace,
-		m_trainingSize);
+		m_trainingSize);*/
 }
