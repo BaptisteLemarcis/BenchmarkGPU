@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __BENCHMARKGPU_TRAINER_H
+#define __BENCHMARKGPU_TRAINER_H
 
 class Trainer {
 public:
@@ -38,3 +39,5 @@ private:
 	float m_learningRate;
 	int m_epochNumber;
 };
+
+#endif // __BENCHMARKGPU_TRAINER_H

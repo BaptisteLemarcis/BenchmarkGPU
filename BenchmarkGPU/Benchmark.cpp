@@ -3,14 +3,15 @@
 #include <string.h>
 #include <iostream>
 #include <cudnn.h>
-
+#include <MagicNumber.h>
+#include <IDXFile.h>
 #include "Trainer.h"
-#include "IDXFile.h"
 
-void main() {
-	Trainer t;
+void main(int argc, char** argv) {
+	//Trainer t;
 	//t.forwardTraining(0, nullptr, nullptr, nullptr,nullptr);
-	std::cout << "Generating magic number" << std::endl;
-	int number = IDXFile::magicNumberGenerator(FLOAT, 3);
-	std::cout << std::hex << number << std::endl;
+	IDXFile* file = IDXFile::readFile("C:\\Users\\baptiste\\Downloads\\train-labels-idx1-ubyte\\train-labels.idx1-ubyte");
+	delete file;
+	std::cout << "Press a key to continue..." << std::endl;
+	std::cin.ignore();
 }
