@@ -6,9 +6,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BenchmarkGPU", "BenchmarkGPU\BenchmarkGPU.vcxproj", "{009A5A8F-4DF1-4A01-93E6-BA28B9F09601}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3736E7B8-8799-443D-9625-5353E3CB13B2} = {3736E7B8-8799-443D-9625-5353E3CB13B2}
+		{276F04C4-B11B-4619-AB0F-05342487AF35} = {276F04C4-B11B-4619-AB0F-05342487AF35}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IDXFileManager", "..\IDXFileManager\IDXFileManager.vcxproj", "{3736E7B8-8799-443D-9625-5353E3CB13B2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BitmapLibrary", "..\BitmapLibrary\BitmapLibrary\BitmapLibrary.vcxproj", "{276F04C4-B11B-4619-AB0F-05342487AF35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +43,16 @@ Global
 		{3736E7B8-8799-443D-9625-5353E3CB13B2}.Release|x64.Build.0 = Release|x64
 		{3736E7B8-8799-443D-9625-5353E3CB13B2}.Release|x86.ActiveCfg = Release|Win32
 		{3736E7B8-8799-443D-9625-5353E3CB13B2}.Release|x86.Build.0 = Release|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Debug|ARM.ActiveCfg = Debug|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Debug|x64.ActiveCfg = Debug|x64
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Debug|x64.Build.0 = Debug|x64
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Debug|x86.ActiveCfg = Debug|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Debug|x86.Build.0 = Debug|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Release|ARM.ActiveCfg = Release|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Release|x64.ActiveCfg = Release|x64
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Release|x64.Build.0 = Release|x64
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Release|x86.ActiveCfg = Release|Win32
+		{276F04C4-B11B-4619-AB0F-05342487AF35}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,8 @@
 #ifndef __BENCHMARKGPU_TRAINER_H
 #define __BENCHMARKGPU_TRAINER_H
 
+#include <cublas_v2.h>
+
 class Trainer {
 public:
 	/**
@@ -31,11 +33,15 @@ private:
 	int m_batchSize;
 
 	cudnnHandle_t m_handle;
-	cudnnTensorDescriptor_t m_dataTensor;
-	cudnnTensorDescriptor_t m_outputTensor;
+	cudnnTensorDescriptor_t m_srcTensorDesc, m_dstTensorDesc, m_biasTensorDesc;
+	cudnnRNNDescriptor_t m_rnnDesc;
+	cudnnActivationDescriptor_t  m_activDesc;
+	cudnnFilterDescriptor_t m_filterDesc;
+	cudnnDataType_t m_dataType;
+	cudnnTensorFormat_t m_tensorFormat;
+	cublasHandle_t m_cublasHandle;
 	size_t m_workspaceSize;
 	size_t m_trainingSize;
-	cudnnRNNDescriptor_t m_rnnDesc;
 	float m_learningRate;
 	int m_epochNumber;
 };

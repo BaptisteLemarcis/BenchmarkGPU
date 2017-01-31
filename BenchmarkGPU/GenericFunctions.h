@@ -5,4 +5,6 @@ void CheckCudNNError(cudnnStatus_t);
 
 void CheckCudaError(cudaError_t);
 
+void CheckCublasError(cublasStatus_t);
+
 #endif // __BENCHMARKGPU_GENERICFUNCTION_H

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string.h>
+#include <cublas_v2.h>
+#include <cuda.h>
 #include <cudnn.h>
 
 #include "Trainer.h"
@@ -21,43 +23,86 @@ Trainer::Trainer(int GPUID, int batchSize, float learningRate, int epochNumber) 
 	CheckCudaError(cudaGetDeviceCount(&gpuNumbers));
 	int i = 0;
 	cudaDeviceProp prop;
-	std::cout << "GPU List:" << std::endl;
+	std::cout << "Cuda capable devices " << gpuNumbers << ":" << std::endl;
 	for (i = 0; i < gpuNumbers; i++) {
 		CheckCudaError(cudaGetDeviceProperties(&prop, i));
-		std::cout << "\t" << prop.name << "(" << i << ")" << std::endl;
+		std::cout << "\tdevice " << i << " (" << prop.name << ") : Proc " << prop.multiProcessorCount << ", Capabilities " << prop.major << "." << prop.minor << ", SmClock "<< (float)prop.clockRate*1e-3 <<" Mhz" << ", MemSize(Mb) " << (int)(prop.totalGlobalMem / (1024 * 1024)) << ", MemClock " << (float)prop.memoryClockRate*1e-3 << " Mhz" << std::endl;
 	}
 	
 	//
 	// Setting CUDA device
 	//
 
-	std::cout << "Setting CudaDevice to " << m_gpuid << std::endl;
+	std::cout << "Using device " << m_gpuid << std::endl;
 	CheckCudaError(cudaSetDevice(m_gpuid));
-	std::cout << "CudaDevice set." << std::endl;
 
 	//
 	// Getting CudNN version
 	//
 
 	size_t version = cudnnGetVersion();
-	std::cout << "Running on CudNN version : " << version << std::endl;
+	std::cout << "CudNN version " << version << std::endl;
+
+	//
+	//	Setting up important var
+	//
+	m_dataType = CUDNN_DATA_FLOAT;
+	m_tensorFormat = CUDNN_TENSOR_NCHW;
+
+	//
+	// Create CuDNN Handler
+	//
+	std::cout << "Creating cudnn handler " << std::endl;
+	CheckCudNNError(cudnnCreate(&m_handle));
+
+	//
+	// Create Cublas Handler
+	//
+	std::cout << "Creating cublas handler " << std::endl;
+	CheckCublasError(cublasCreate(&m_cublasHandle));
 
 	//
 	// Create Descriptor
 	//
 
 	std::cout << "Creating TensorDescriptor " << std::endl;
-	CheckCudNNError(cudnnCreateTensorDescriptor(&m_dataTensor));
+	CheckCudNNError(cudnnCreateTensorDescriptor(&m_srcTensorDesc));
+	CheckCudNNError(cudnnCreateTensorDescriptor(&m_dstTensorDesc));
+	CheckCudNNError(cudnnCreateTensorDescriptor(&m_biasTensorDesc));
 
 	CheckCudNNError(cudnnCreateRNNDescriptor(&m_rnnDesc));
+	
+	CheckCudNNError(cudnnCreateFilterDescriptor(&m_filterDesc));
 
-	CheckCudNNError(cudnnCreate(&m_handle));
+	CheckCudNNError(cudnnCreateActivationDescriptor(&m_activDesc));
+
+	//
+	// Setting up TensorDescriptor
+	//
+
+
+
+	CheckCudNNError(cudnnSetActivationDescriptor(m_activDesc, CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0.0));
 }
 
 Trainer::~Trainer() {
-	CheckCudaError(cudaSetDevice(m_gpuid));
+	
 	CheckCudNNError(cudnnDestroy(m_handle));
-	CheckCudNNError(cudnnDestroyTensorDescriptor(m_dataTensor));
+
+	CheckCudNNError(cudnnDestroyTensorDescriptor(m_srcTensorDesc));
+	CheckCudNNError(cudnnDestroyTensorDescriptor(m_dstTensorDesc));
+	CheckCudNNError(cudnnDestroyTensorDescriptor(m_biasTensorDesc));
+
+	CheckCudNNError(cudnnDestroyRNNDescriptor(m_rnnDesc));
+
+	CheckCudNNError(cudnnDestroyFilterDescriptor(m_filterDesc));
+
+	CheckCudNNError(cudnnDestroyActivationDescriptor(m_activDesc));
+
+	CheckCublasError(cublasDestroy(m_cublasHandle));
+
+	CheckCudaError(cudaSetDevice(m_gpuid));
+	cudaDeviceReset();
 }
 
 void Trainer::forwardTraining(int seqLength, float* data, float* output, void* trainingSpace, void* workspace)
