@@ -10,12 +10,18 @@
     <ClCompile Include="Trainer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="GradientExample.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GenericFunctions.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="Trainer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="GradientExample.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

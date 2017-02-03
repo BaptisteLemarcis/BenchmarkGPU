@@ -11,7 +11,7 @@
 
 void main(int argc, char** argv) {
 	Trainer t;
-	t.forwardTraining(0, nullptr, nullptr, nullptr, nullptr);
+	t.train(NULL, 500);
 	/*IDXFile* file = IDXFile::readFile("C:\\Users\\baptiste\\Downloads\\train-labels-idx1-ubyte\\train-images.idx3-ubyte");
 	std::cout << "x : " << file->getData().getDimensionSize(1) << std::endl;
 	std::cout << "y : " << file->getData().getDimensionSize(2) << std::endl;
