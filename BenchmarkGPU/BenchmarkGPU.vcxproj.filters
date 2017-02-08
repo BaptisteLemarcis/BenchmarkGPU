@@ -4,25 +4,55 @@
     <ClCompile Include="Benchmark.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="FullyConnectedLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="Layer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="LSTMLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftmaxLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="Network.cpp">
+      <Filter>src\nn</Filter>
+    </ClCompile>
     <ClCompile Include="GenericFunctions.cpp">
-      <Filter>src</Filter>
+      <Filter>src\nn</Filter>
     </ClCompile>
-    <ClCompile Include="Trainer.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="Logger.cpp">
+      <Filter>src\nn</Filter>
     </ClCompile>
-    <ClCompile Include="GradientExample.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="Params.cpp">
+      <Filter>src\nn</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FullyConnectedLayer.h">
+      <Filter>include\nn\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="Layer.h">
+      <Filter>include\nn\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="LSTMLayer.h">
+      <Filter>include\nn\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftmaxLayer.h">
+      <Filter>include\nn\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="Params.h">
+      <Filter>include\nn</Filter>
+    </ClInclude>
     <ClInclude Include="GenericFunctions.h">
-      <Filter>include</Filter>
+      <Filter>include\nn</Filter>
     </ClInclude>
-    <ClInclude Include="Trainer.h">
-      <Filter>include</Filter>
+    <ClInclude Include="Logger.h">
+      <Filter>include\nn</Filter>
     </ClInclude>
-    <ClInclude Include="GradientExample.h">
-      <Filter>include</Filter>
+    <ClInclude Include="Network.h">
+      <Filter>include\nn</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -31,6 +61,18 @@
     </Filter>
     <Filter Include="include">
       <UniqueIdentifier>{38a881ad-ecbe-4540-8952-df13d819e9a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\nn">
+      <UniqueIdentifier>{c101e569-7db0-486a-884b-ba4c1e9a1372}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\nn\layer">
+      <UniqueIdentifier>{93452b47-3988-4751-b66d-31caf3f48e57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\nn">
+      <UniqueIdentifier>{6f80074a-d025-496e-822a-0c78cc4eb7d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\nn\layer">
+      <UniqueIdentifier>{b370ec4d-b4ec-4dc6-b81f-3f88ea6e9a9b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

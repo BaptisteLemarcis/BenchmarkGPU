@@ -3,24 +3,41 @@
 #include <string.h>
 #include <iostream>
 #include <cudnn.h>
-#include <MagicNumber.h>
-#include <Data.h>
-#include <IDXFile.h>
-#include <bitmap_image.h>
-#include "Trainer.h"
+#include <sstream>
+#include <tuple>
 
-void main(int argc, char** argv) {
-	Trainer t;
-	t.train(NULL, 500);
-	/*IDXFile* file = IDXFile::readFile("C:\\Users\\baptiste\\Downloads\\train-labels-idx1-ubyte\\train-images.idx3-ubyte");
-	std::cout << "x : " << file->getData().getDimensionSize(1) << std::endl;
-	std::cout << "y : " << file->getData().getDimensionSize(2) << std::endl;
-	bitmap_image image(file->getData().getDimensionSize(1), file->getData().getDimensionSize(2));
+#include "Logger.h"
+#include "Params.h"
+#include "Network.h"
+#include "GenericFunctions.h"
+#include "LSTMLayer.h"
+#include "FullyConnectedLayer.h"
+#include "SoftmaxLayer.h"
 
+int main(int argc, char** argv) {
+	
+	Logger::instance()->setFile("BenchmarkGPU.log");
 
-	DataType* d = file->getData().getData();
+	Params p = Params::load(argc, argv);
+	p.writeParamsToFile();
+	auto data = generateData(p["nbData"] * p["inputSize"]);
 
-	delete file;*/
+	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["seqLength"]);
+
+	LSTMLayer lstm(n->getHandle(), p["inputSize"], p["hiddenSize"], p["nbLayers"], p["batchSize"], p["seqLength"], p["dropout"]);
+	FullyConnectedLayer fc(p["hiddenSize"], p["outputDim"], p["batchSize"]);
+	SoftmaxLayer sm(p["outputDim"], p["batchSize"]);
+
+	n->addLayer(lstm);
+	n->addLayer(fc);
+	n->addLayer(sm);
+
+	n->train(std::get<0>(data), std::get<1>(data), p["epoch"], p["nbData"]);
+
+	delete n;
+
 	std::cout << "Press a key to continue..." << std::endl;
 	std::cin.ignore();
+
+	return EXIT_SUCCESS;
 }
