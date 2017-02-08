@@ -93,3 +93,8 @@ std::tuple<float*, float**> generateData(int s)
 
 	return std::tuple<float*, float**>(data, labels);
 }
+
+static inline unsigned int RoundUp(unsigned int nominator, unsigned int denominator)
+{
+	return (nominator + denominator - 1) / denominator;
+}

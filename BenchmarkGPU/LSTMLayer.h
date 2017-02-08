@@ -7,8 +7,8 @@ public:
 	LSTMLayer(cudnnHandle_t&,int, int, int, int, int, float);
 	~LSTMLayer();
 
-	std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float**);
-	void backward(cudnnHandle_t&, float*);
+	std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*);
+	float* backward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*);
 	void initWeights(cudnnHandle_t&);
 	void initEpoch(cudnnHandle_t&);
 

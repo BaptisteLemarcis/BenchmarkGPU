@@ -12,8 +12,8 @@ public:
 
 	int getOutputDim();
 
-	virtual std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float**) = 0;
-	virtual void backward(cudnnHandle_t&, float*) = 0;
+	virtual std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*) = 0;
+	virtual float* backward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*) = 0;
 	virtual void initWeights(cudnnHandle_t&) = 0;
 	virtual void initEpoch(cudnnHandle_t&) = 0;
 

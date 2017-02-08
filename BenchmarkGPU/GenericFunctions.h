@@ -18,4 +18,6 @@ void printDeviceVector(int, float*, int);
 
 std::tuple<float*, float**> generateData(int);
 
+static inline unsigned int RoundUp(unsigned int nominator, unsigned int denominator);
+
 #endif // __BENCHMARKGPU_GENERICFUNCTION_H

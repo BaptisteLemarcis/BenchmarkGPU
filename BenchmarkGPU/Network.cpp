@@ -18,11 +18,7 @@
 
 Network::Network() : Network(128, 0.01f, 4, 1) {}
 
-Network::Network(int batchSize, float learningRate, int inputSize, int seqLength = 50) {
-	m_batchSize = batchSize;
-	m_learningRate = learningRate;
-	m_inputDim = inputSize;
-	m_seqLength = seqLength;
+Network::Network(int batchSize, float learningRate, int inputSize, int outputDim, int seqLength = 50) : m_batchSize(batchSize), m_learningRate(learningRate), m_inputDim(inputSize), m_seqLength(seqLength), m_outputDim(outputDim){
 
 	//
 	// Listing GPU Devices
@@ -165,15 +161,18 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 		toWrite << "Epoch " << (epoch + 1) << " / " << nbEpoch << " [" << curNbBatch << " / " << nbData << "]";
 		Logger::instance()->writeLine(toWrite.str());
 
+		float *d_onevec;
+		CheckCudaError(cudaMalloc(&d_onevec, sizeof(float)* m_batchSize));
 		// Forward pass + get error
-		auto localError = forward(bData, bTargets);
+		auto resultFwd = forward(bData, bTargets, d_onevec);
+		backward(std::get<1>(resultFwd), d_onevec);
 
 		toWrite.str("");
 		toWrite.clear();
-		toWrite << "\tError " << localError;
+		toWrite << "\tError " << std::get<0>(resultFwd);
 		Logger::instance()->writeLine(toWrite.str());
 
-		error += localError;
+		error += std::get<0>(resultFwd);
 		//softmaxLayer(bData);
 		/*
 		//
@@ -210,7 +209,7 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 	CheckCudaError(cudaMemcpy(m_weightsGradient, tmpWGrad, m_weightsSize, cudaMemcpyHostToDevice));*/
 }
 
-float Network::forward(float* input, float** target)
+std::tuple<float, float*> Network::forward(float* input, float** target, float* d_onevec)
 {
 	float error = 0;
 	std::vector<std::reference_wrapper<Layer>>::iterator it = m_layers.begin();
@@ -219,16 +218,24 @@ float Network::forward(float* input, float** target)
 	output = std::get<1>(result);
 	it++;
 	for (; it != m_layers.end(); ++it) {
-		result = it->get().forward(m_handle, m_cublasHandle, output, target);
+		result = it->get().forward(m_handle, m_cublasHandle, output, target, d_onevec);
 		output = std::get<1>(result);
 		error += std::get<0>(result);
 	}
-	return error;
+	return std::tuple<float, float*>(error, output);
 }
 
-void Network::backward(float* input)
+void Network::backward(float* input, float* d_onevec)
 {
+	float* dloss_data;
+	CheckCudaError(cudaMalloc(&dloss_data, sizeof(float) * m_batchSize * m_outputDim));
+	CheckCudaError(cudaMemcpyAsync(dloss_data, input, sizeof(float) * m_batchSize * m_outputDim, cudaMemcpyDeviceToDevice));
+
 	
+
+	// Accounting for batch size in SGD
+	//checkCudaErrors(cublasSscal(cublasHandle, ref_fc2.outputs * m_batchSize, &scalVal, dloss_data, 1));
+
 }
 
 void Network::prepareData(float* input, float** target, int b, float* d_batchData, float** bTarget) {

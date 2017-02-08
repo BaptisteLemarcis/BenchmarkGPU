@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 	p.writeParamsToFile();
 	auto data = generateData(p["nbData"] * p["inputSize"]);
 
-	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["seqLength"]);
+	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["outputDim"], p["seqLength"]);
 
 	LSTMLayer lstm(n->getHandle(), p["inputSize"], p["hiddenSize"], p["nbLayers"], p["batchSize"], p["seqLength"], p["dropout"]);
 	FullyConnectedLayer fc(p["hiddenSize"], p["outputDim"], p["batchSize"]);

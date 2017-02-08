@@ -213,7 +213,7 @@ LSTMLayer::~LSTMLayer()
 	CheckCudaError(cudaDeviceReset());
 }
 
-std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* input, float** target)
+std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* input, float** target, float* d_onevec)
 {
 	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_hiddenOutput, 0.f);
 	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_cellOutput, 0.f);
@@ -248,9 +248,10 @@ std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle
 	return std::make_tuple(0.f, m_dstData);
 }
 
-void LSTMLayer::backward(cudnnHandle_t& handle, float* input) {
+float* LSTMLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* input, float** targets, float* d_onevec) {
 	updateGrad(handle);
 	updateGradParameters(handle, input);
+	return new float[1];
 }
 
 void LSTMLayer::updateGrad(cudnnHandle_t& handle)

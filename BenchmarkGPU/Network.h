@@ -20,9 +20,10 @@ public:
 	*	\param batchSize - 
 	*	\param learningRate - 
 	*	\param inputSize - Number of features
+	*	\param outputDim -
 	*	\param seqLength -
 	*/
-	Network(int, float, int, int);
+	Network(int, float, int, int, int);
 
 	~Network();
 
@@ -40,8 +41,8 @@ public:
 	cudnnHandle_t& getHandle();
 private:
 	void trainEpoch(int, int, int, int, float*, float**);
-	float forward(float*, float**);
-	void backward(float*);
+	std::tuple<float, float*> forward(float*, float**, float*);
+	void backward(float*, float*);
 	void prepareData(float*, float**, int, float*, float**);
 
 private:
@@ -50,6 +51,7 @@ private:
 	int m_batchSize;
 	int m_seqLength;
 	int m_inputDim;
+	int m_outputDim;
 
 	cudnnHandle_t m_handle;
 	cublasHandle_t m_cublasHandle;
