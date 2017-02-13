@@ -50,5 +50,7 @@ void Params::writeParamsToFile() {
 	toWrite << "Batch Size\t\t" << (int)m_p["batchSize"] << std::endl;
 	toWrite << "==========================================================";
 	Logger::instance()->writeLine(toWrite.str());
+	//toWrite << "==========================================================" << std::endl;
+	//Logger::instance() << "Learning Rate\t" << m_p["learningRate"] << std::endl;
 }
 

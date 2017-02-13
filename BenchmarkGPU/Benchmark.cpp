@@ -20,7 +20,12 @@ int main(int argc, char** argv) {
 
 	Params p = Params::load(argc, argv);
 	p.writeParamsToFile();
-	auto data = generateData(p["nbData"] * p["inputSize"]);
+
+	int dataSize = p["nbData"] * p["inputSize"];
+	float *d_data, *d_targets;
+	CheckError(cudaMalloc((void**)&d_data, dataSize * sizeof(float)), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&d_targets, p["outputDim"] * dataSize * sizeof(float)), __FILE__, __LINE__);
+	generateData(dataSize, d_data, d_targets);
 
 	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["outputDim"], p["seqLength"]);
 
@@ -32,12 +37,12 @@ int main(int argc, char** argv) {
 	n->addLayer(fc);
 	n->addLayer(sm);
 
-	n->train(std::get<0>(data), std::get<1>(data), p["epoch"], p["nbData"]);
+	n->train(d_data, d_targets, p["epoch"], p["nbData"]);
 
 	delete n;
 
-	std::cout << "Press a key to continue..." << std::endl;
-	std::cin.ignore();
+	/*std::cout << "Press a key to continue..." << std::endl;
+	std::cin.ignore();*/
 
 	return EXIT_SUCCESS;
 }

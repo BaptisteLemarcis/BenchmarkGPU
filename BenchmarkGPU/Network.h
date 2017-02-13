@@ -29,21 +29,21 @@ public:
 
 	/**
 	*	\brief .
-	*	\param data -  
-	*	\param labels -
+	*	\param d_data -  
+	*	\param d_labels -
 	*	\param epochNumber -
 	*	\param nbData -
 	*/
-	void train(float*, float**, int, int);
+	void train(float*, float*, int, int);
 
 	void addLayer(Layer&);
 
 	cudnnHandle_t& getHandle();
 private:
-	void trainEpoch(int, int, int, int, float*, float**);
-	std::tuple<float, float*> forward(float*, float**, float*);
-	void backward(float*, float*);
-	void prepareData(float*, float**, int, float*, float**);
+	void trainEpoch(int, int, int, int, float*, float*);
+	std::tuple<float, std::vector<float*>> forward(float*, float*, float*);
+	void backward(std::vector<float*>, float*, float*);
+	void prepareData(float*, float*, int, float*, float*);
 
 private:
 	int m_gpuid;

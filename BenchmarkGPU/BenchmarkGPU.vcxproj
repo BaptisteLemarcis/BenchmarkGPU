@@ -95,7 +95,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -158,16 +158,20 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Benchmark.cpp" />
-    <ClCompile Include="FullyConnectedLayer.cpp" />
-    <ClCompile Include="GenericFunctions.cpp" />
+    <CudaCompile Include="FullyConnectedLayer.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="GenericFunctions.cu" />
     <ClCompile Include="Layer.cpp" />
     <ClCompile Include="Logger.cpp" />
-    <ClCompile Include="LSTMLayer.cpp" />
-    <ClCompile Include="Network.cpp">
+    <CudaCompile Include="LSTMLayer.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="Network.cu">
       <FileType>Document</FileType>
-    </ClCompile>
+    </CudaCompile>
     <ClCompile Include="Params.cpp" />
-    <ClCompile Include="SoftmaxLayer.cpp" />
+    <CudaCompile Include="SoftmaxLayer.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FullyConnectedLayer.h" />

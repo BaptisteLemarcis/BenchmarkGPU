@@ -7,13 +7,14 @@ public:
 	LSTMLayer(cudnnHandle_t&,int, int, int, int, int, float);
 	~LSTMLayer();
 
-	std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*);
-	float* backward(cudnnHandle_t&, cublasHandle_t&, float*, float**, float*);
+	std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float*, float*);
+	float* backward(cudnnHandle_t&, cublasHandle_t&, float*, float*, float*, float*);
 	void initWeights(cudnnHandle_t&);
 	void initEpoch(cudnnHandle_t&);
+	void updateWeight(cublasHandle_t&, float);
 
 private:
-	void updateGrad(cudnnHandle_t&);
+	void updateGrad(cudnnHandle_t&, float*);
 	void updateGradParameters(cudnnHandle_t&, float*);
 	void batchInit();
 

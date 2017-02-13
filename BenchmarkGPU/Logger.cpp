@@ -33,3 +33,22 @@ void Logger::writeLine(std::string line)
 	m_logFile << line << std::endl;
 	m_logFile.flush();
 }
+
+/*template<typename T>
+Logger & operator<<(Logger & os, T & t const)
+{
+	os.m_logFile.precision(3);
+	os.m_logFile.setf(std::ios::fixed, std::ios::floatfield);
+	os.m_logFile << T << std::endl;
+	os.m_logFile.flush();
+	return os;
+}*/
+/*
+Logger& operator<<(Logger& os, std::ostream&(*f)(std::ostream&))
+{
+	os.m_logFile.precision(3);
+	os.m_logFile.setf(std::ios::fixed, std::ios::floatfield);
+	os.m_logFile << f << std::endl;
+	os.m_logFile.flush();
+	return os;
+}*/
