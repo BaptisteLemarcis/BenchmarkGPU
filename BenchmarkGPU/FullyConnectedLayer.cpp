@@ -8,6 +8,7 @@
 #include "Logger.h"
 #include "FullyConnectedLayer.h"
 #include "GenericFunctions.h"
+#include "GPUKernel.cuh"
 
 
 
@@ -61,7 +62,7 @@ std::tuple<float, float*> FullyConnectedLayer::forward(cudnnHandle_t& handle, cu
 
 float* FullyConnectedLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* dloss_data, float* targets, float* d_onevec, float* previousLayerOutput) {
 	
-	Logger::instance()->writeLine("FullyConnectedLayer bwd");
+	/*Logger::instance()->writeLine("FullyConnectedLayer bwd");*/
 	
 	float alpha(1), beta(0);
 
@@ -85,8 +86,8 @@ float* FullyConnectedLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cubl
 	CheckError(cublasSgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, m_inputDim, m_batchSize, m_outputDim,
 		&alpha, m_d_neurons, m_inputDim, dloss_data, m_outputDim, &beta, d_output, m_inputDim), __FILE__, __LINE__);
 
-	Logger::instance()->writeLine("\tdloss_data ======== 1");
-	printDeviceVectorToFile(10, d_output, 0);
+// 	Logger::instance()->writeLine("\tdloss_data ======== 1");
+// 	printDeviceVectorToFile(10, d_output, 0);
 
 	return d_output;
 }

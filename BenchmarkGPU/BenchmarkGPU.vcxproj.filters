@@ -13,6 +13,21 @@
     <ClCompile Include="Params.cpp">
       <Filter>src\nn</Filter>
     </ClCompile>
+    <ClCompile Include="GenericFunctions.cpp">
+      <Filter>src\nn</Filter>
+    </ClCompile>
+    <ClCompile Include="Network.cpp">
+      <Filter>src\nn</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftmaxLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="LSTMLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="FullyConnectedLayer.cpp">
+      <Filter>src\nn\layer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FullyConnectedLayer.h">
@@ -39,6 +54,9 @@
     <ClInclude Include="Network.h">
       <Filter>include\nn</Filter>
     </ClInclude>
+    <ClInclude Include="GPUKernel.cuh">
+      <Filter>include\nn</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -61,19 +79,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="SoftmaxLayer.cu">
-      <Filter>src\nn\layer</Filter>
-    </CudaCompile>
-    <CudaCompile Include="GenericFunctions.cu">
-      <Filter>src\nn</Filter>
-    </CudaCompile>
-    <CudaCompile Include="LSTMLayer.cu">
-      <Filter>src\nn\layer</Filter>
-    </CudaCompile>
-    <CudaCompile Include="FullyConnectedLayer.cu">
-      <Filter>src\nn\layer</Filter>
-    </CudaCompile>
-    <CudaCompile Include="Network.cu">
+    <CudaCompile Include="GPUKernel.cu">
       <Filter>src\nn</Filter>
     </CudaCompile>
   </ItemGroup>

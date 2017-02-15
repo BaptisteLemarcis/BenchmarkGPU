@@ -43,25 +43,25 @@ private:
 	cudnnTensorDescriptor_t m_gradientHiddenInputDesc, m_gradientCellInputDesc;
 	cudnnTensorDescriptor_t m_gradHiddenOutputDesc, m_gradCellOutputDesc;
 
-	float *m_hiddenInput = NULL;
-	float *m_cellInput = NULL;
+	float *m_d_hiddenInput = NULL;
+	float *m_d_cellInput = NULL;
 
-	float *m_gradientInput;
-	float *m_gradientHiddenInput = NULL;
-	float *m_gradientCellInput = NULL;
+	float *m_d_gradientInput;
+	float *m_d_gradientHiddenInput = NULL;
+	float *m_d_gradientCellInput = NULL;
 
-	float *m_dstData;
-	float *m_hiddenOutput = NULL;
-	float *m_cellOutput = NULL;
+	float *m_d_dstData;
+	float *m_d_hiddenOutput = NULL;
+	float *m_d_cellOutput = NULL;
 
-	float *m_gradientOutput;
-	float *m_gradHiddenOutput = NULL;
-	float *m_gradCellOutput = NULL;
+	float *m_d_gradientOutput;
+	float *m_d_gradHiddenOutput = NULL;
+	float *m_d_gradCellOutput = NULL;
 
-	float *m_weights;
-	float *m_weightsGradient;
+	float *m_d_weights;
+	float *m_d_weightsGradient;
 
-	float *m_workspace;
-	float *m_reserveSpace;
+	float *m_d_workspace;
+	float *m_d_reserveSpace;
 };
 

@@ -77,6 +77,11 @@
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\$(Platform)\$(Configuration)</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\int\$(Platform)\$(Configuration)\</IntDir>
+    <ExtensionsToDeleteOnClean>*.cdf;*.cache;*.obj;*.obj.enc;*.ilk;*.ipdb;*.iobj;*.resources;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.tlog;*.manifest;*.res;*.pch;*.exp;*.idb;*.rep;*.xdc;*.pdb;*_manifest.rc;*.bsc;*.sbr;*.xml;*.metagen;*.bi;*.tlog;*.log;*.dll</ExtensionsToDeleteOnClean>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -146,11 +151,19 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudnn.lib;cublas.lib;cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cublas*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudnn*.dll" "$(OutDir)"
+cd "$(SolutionDir)bin\$(Platform)\$(Configuration)"
+del *.log
+del *.pdb
+del *.obj
+del *.ipdb
+del *.iobj</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -158,24 +171,28 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Benchmark.cpp" />
-    <CudaCompile Include="FullyConnectedLayer.cu">
+    <ClCompile Include="FullyConnectedLayer.cpp">
       <FileType>CppCode</FileType>
-    </CudaCompile>
-    <CudaCompile Include="GenericFunctions.cu" />
+    </ClCompile>
+    <ClCompile Include="GenericFunctions.cpp" />
     <ClCompile Include="Layer.cpp" />
     <ClCompile Include="Logger.cpp" />
-    <CudaCompile Include="LSTMLayer.cu">
+    <CudaCompile Include="GPUKernel.cu" />
+    <ClCompile Include="LSTMLayer.cpp">
       <FileType>CppCode</FileType>
-    </CudaCompile>
-    <CudaCompile Include="Network.cu">
+    </ClCompile>
+    <ClCompile Include="Network.cpp">
       <FileType>Document</FileType>
-    </CudaCompile>
+    </ClCompile>
     <ClCompile Include="Params.cpp" />
-    <CudaCompile Include="SoftmaxLayer.cu" />
+    <ClCompile Include="SoftmaxLayer.cpp">
+      <FileType>CppCode</FileType>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FullyConnectedLayer.h" />
     <ClInclude Include="GenericFunctions.h" />
+    <ClInclude Include="GPUKernel.cuh" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="LSTMLayer.h" />

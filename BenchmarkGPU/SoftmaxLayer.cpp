@@ -1,36 +1,11 @@
 #include <tuple>
 #include <cuda.h>
 #include <cudnn.h>
-#include <device_launch_parameters.h>
 
 #include "Logger.h"
 #include "SoftmaxLayer.h"
 #include "GenericFunctions.h"
-
-__global__ void SoftmaxLossKernel(float* d_target, float* d_loss_data, int size) {
-	//int idxTarget = (blockDim.x * blockIdx.x + threadIdx.x) + blockIdx.y;
-	int idx = ((blockDim.x * blockIdx.x + threadIdx.x) * blockDim.y) + blockIdx.y;
-
-	if (idx >= size) return;
-
-	if (d_target[idx] == 1.f)
-		d_loss_data[idx] -= 1.f;
-}
-
-__global__ void SoftmaxErrorKernel(float* d_error, float* d_input, float* d_targets, int size) {
-	int idx = blockDim.x * blockIdx.x + threadIdx.x;
-	int idx1 = 2 * idx;
-	int idx2 = (2 * (idx+1))-1;
-
-	/*int idx3 = 2 * (idx+1);
-	int idx4 = (2 * ((idx+1) + 1)) - 1;*/
-
-	if (idx <= size) return;
-	float z = d_input[idx1] - d_targets[idx1];
-	*d_error += z*z;
-	z = d_input[idx2] - d_targets[idx2];
-	*d_error += z*z;
-}
+#include "GPUKernel.cuh"
 
 SoftmaxLayer::SoftmaxLayer(int inputDim, int batchSize) : Layer(inputDim, inputDim, batchSize)
 {
@@ -38,9 +13,6 @@ SoftmaxLayer::SoftmaxLayer(int inputDim, int batchSize) : Layer(inputDim, inputD
 	// Create Descriptor
 	//
 	CheckError(cudnnCreateTensorDescriptor(&m_outputDesc), __FILE__, __LINE__);
-
-	// Allocating
-	CheckError(cudaMalloc(&m_d_output, m_outputDim*batchSize * sizeof(float)), __FILE__, __LINE__);
 
 	//
 	// Setting up TensorDescriptor
@@ -65,7 +37,7 @@ SoftmaxLayer::SoftmaxLayer(int inputDim, int batchSize) : Layer(inputDim, inputD
 
 SoftmaxLayer::~SoftmaxLayer()
 {
-	CheckError(cudaFree(&m_d_output), __FILE__, __LINE__);
+	//CheckError(cudaFree(&m_d_output), __FILE__, __LINE__);
 	CheckError(cudnnDestroyTensorDescriptor(m_outputDesc), __FILE__, __LINE__);
 }
 
@@ -73,6 +45,9 @@ std::tuple<float, float*> SoftmaxLayer::forward(cudnnHandle_t& handle, cublasHan
 {
 	float alpha = float(1);
 	float beta = float(0);
+
+	// Allocating
+	CheckError(cudaMalloc(&m_d_output, m_outputDim*m_batchSize * sizeof(float)), __FILE__, __LINE__);
 
 	CheckError(cudnnSoftmaxForward(handle,
 		CUDNN_SOFTMAX_ACCURATE,
@@ -88,7 +63,7 @@ std::tuple<float, float*> SoftmaxLayer::forward(cudnnHandle_t& handle, cublasHan
 	float* d_batchError, batchError;
 	CheckError(cudaMalloc(&d_batchError, sizeof(float)), __FILE__, __LINE__);
 
-	SoftmaxErrorKernel <<<RoundUp(m_batchSize, 128), 128 >>> (d_batchError, d_input, d_targets, m_batchSize);
+	softmaxError(m_batchSize, d_batchError, d_input, d_targets);
 
 	CheckError(cudaMemcpy(&batchError, d_batchError, sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);
 	
@@ -118,7 +93,6 @@ float* SoftmaxLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandl
 	// Softmax layer
 	//SoftmaxLossBackprop <<< RoundUp(m_batchSize, m_batchSize), m_batchSize >>> (labels, m_output, m_batchSize, dloss_data);
 	float *d_diffData, *d_gradData;
-	Logger::instance()->writeLine("Softmax bwd");
 
 	cudnnTensorDescriptor_t diffTensorDesc;
 	CheckError(cudnnCreateTensorDescriptor(&diffTensorDesc), __FILE__, __LINE__);
@@ -141,12 +115,13 @@ float* SoftmaxLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandl
 	/*printDeviceVectorToFile(m_batchSize*m_inputDim, dloss_data, 0);
 	printVectorToFile(m_batchSize*m_inputDim, loss_data, 0);*/
 
-	dim3 b = { (unsigned int)RoundUp(m_batchSize,128), (unsigned int)m_inputDim, 1};
-	dim3 t = { 128 , 1, 1 };
+	/*dim3 b = { (unsigned int)RoundUp(m_batchSize,128), (unsigned int)m_inputDim, 1};
+	dim3 t = { 128 , 1, 1 };*/
 
 	CheckError(cudaMalloc((void**)&d_diffData, m_batchSize*m_inputDim * sizeof(float)), __FILE__, __LINE__);
 
-	SoftmaxLossKernel<<<b, t >>>(d_targets, d_loss_data, m_batchSize*m_inputDim);
+	//SoftmaxLossKernel<<<b, t >>>(d_targets, d_loss_data, m_batchSize*m_inputDim);
+	softmaxLoss(m_batchSize, m_inputDim, d_targets, d_loss_data);
 	/*float* diffData = new float[m_batchSize*m_inputDim];
 	for (int b = 0; b < m_batchSize; b++) {
 		float* target = targets[b];
@@ -169,7 +144,7 @@ float* SoftmaxLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandl
 	//CheckError(cudaMemcpy(d_diffData, diffData, m_batchSize*m_inputDim * sizeof(float), cudaMemcpyHostToDevice), __FILE__, __LINE__);
 	
 	
-	CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
+	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 	
 	float alpha(1), beta(0);
 
@@ -185,11 +160,11 @@ float* SoftmaxLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandl
 		m_outputDesc,
 		d_gradData), __FILE__, __LINE__);
 
-	Logger::instance()->writeLine("d_loss_data");
+	/*Logger::instance()->writeLine("d_loss_data");
 	printDeviceVectorToFile(10, d_loss_data, 0);
 
 	Logger::instance()->writeLine("d_diffData");
-	printDeviceVectorToFile(10, d_diffData, 0);
+	printDeviceVectorToFile(10, d_diffData, 0);*/
 
 	/*Logger::instance()->writeLine("\tdloss_data ======== 1");
 	printDeviceVectorToFile(10, d_loss_data, 0);*/

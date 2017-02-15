@@ -3,11 +3,11 @@
 #include <cudnn.h>
 #include <iostream>
 #include <random>
-#include <device_launch_parameters.h>
 
 #include "Logger.h"
 #include "LSTMLayer.h"
 #include "GenericFunctions.h"
+#include "GPUKernel.cuh"
 
 LSTMLayer::LSTMLayer(cudnnHandle_t& handle, int inputDim, int outputDim, int nbLayer, int batchSize, int seqLength, float dropout) : Layer(inputDim, outputDim, batchSize)
 {
@@ -22,20 +22,20 @@ LSTMLayer::LSTMLayer(cudnnHandle_t& handle, int inputDim, int outputDim, int nbL
 
 	// Allocating
 	//CheckError(cudaMalloc((void**)&m_srcData, m_seqLength * m_inputSize * m_batchSize * m_dataTypeSize));
-	CheckError(cudaMalloc((void**)&m_hiddenInput, m_layerNumber * m_hiddenSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_cellInput, m_layerNumber * m_hiddenSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_hiddenInput, m_layerNumber * m_hiddenSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_cellInput, m_layerNumber * m_hiddenSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
 
-	CheckError(cudaMalloc((void**)&m_gradientInput, m_seqLength * m_inputSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_gradientHiddenInput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_gradientCellInput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradientInput, m_seqLength * m_inputSize * m_batchSize * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradientHiddenInput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradientCellInput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
 
-	CheckError(cudaMalloc((void**)&m_dstData, m_seqLength * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_hiddenOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_cellOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_dstData, m_seqLength * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_hiddenOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_cellOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
 
-	CheckError(cudaMalloc((void**)&m_gradientOutput, m_seqLength * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_gradHiddenOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_gradCellOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradientOutput, m_seqLength * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradHiddenOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_gradCellOutput, m_layerNumber * m_hiddenSize * m_batchSize  * m_dataTypeSize), __FILE__, __LINE__);
 
 	m_srcDataDesc = (cudnnTensorDescriptor_t*)malloc(m_seqLength * sizeof(cudnnTensorDescriptor_t));
 	m_dstDataDesc = (cudnnTensorDescriptor_t*)malloc(m_seqLength * sizeof(cudnnTensorDescriptor_t));
@@ -158,8 +158,8 @@ LSTMLayer::LSTMLayer(cudnnHandle_t& handle, int inputDim, int outputDim, int nbL
 	CheckError(cudnnSetFilterNdDescriptor(m_weightsDesc, CUDNN_DATA_FLOAT, m_tensorFormat, 3, dimW), __FILE__, __LINE__);
 	CheckError(cudnnSetFilterNdDescriptor(m_weightsGradientDesc, CUDNN_DATA_FLOAT, m_tensorFormat, 3, dimW), __FILE__, __LINE__);
 
-	CheckError(cudaMalloc((void**)&m_weights, m_weightsSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_weightsGradient, m_weightsSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_weights, m_weightsSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_weightsGradient, m_weightsSize), __FILE__, __LINE__);
 
 	// -------------------------
 	// Set up work space and reserved memory
@@ -169,33 +169,29 @@ LSTMLayer::LSTMLayer(cudnnHandle_t& handle, int inputDim, int outputDim, int nbL
 	// Only needed in training, shouldn't be touched between passes.
 	CheckError(cudnnGetRNNTrainingReserveSize(handle, m_rnnDesc, m_seqLength, m_srcDataDesc, &m_reserveSize), __FILE__, __LINE__);
 
-	CheckError(cudaMalloc((void**)&m_workspace, m_workSize), __FILE__, __LINE__);
-	CheckError(cudaMalloc((void**)&m_reserveSpace, m_reserveSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_workspace, m_workSize), __FILE__, __LINE__);
+	CheckError(cudaMalloc((void**)&m_d_reserveSpace, m_reserveSize), __FILE__, __LINE__);
 
 	CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
-
-	/*delete[] dimA;
-	delete[] dimW;
-	delete[] strideA;*/
 }
 
 LSTMLayer::~LSTMLayer()
 {
-	CheckError(cudaFree(m_hiddenInput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_cellInput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_dstData), __FILE__, __LINE__);
-	CheckError(cudaFree(m_hiddenOutput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_cellOutput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradientInput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradientHiddenInput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradientCellInput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradientOutput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradHiddenOutput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_gradCellOutput), __FILE__, __LINE__);
-	CheckError(cudaFree(m_workspace), __FILE__, __LINE__);
-	CheckError(cudaFree(m_reserveSpace), __FILE__, __LINE__);
-	CheckError(cudaFree(m_weights), __FILE__, __LINE__);
-	CheckError(cudaFree(m_weightsGradient), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_hiddenInput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_cellInput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_dstData), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_hiddenOutput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_cellOutput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradientInput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradientHiddenInput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradientCellInput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradientOutput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradHiddenOutput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_gradCellOutput), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_workspace), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_reserveSpace), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_weights), __FILE__, __LINE__);
+	CheckError(cudaFree(m_d_weightsGradient), __FILE__, __LINE__);
 
 	CheckError(cudnnDestroyRNNDescriptor(m_rnnDesc), __FILE__, __LINE__);
 	CheckError(cudnnDestroyFilterDescriptor(m_weightsDesc), __FILE__, __LINE__);
@@ -222,8 +218,8 @@ LSTMLayer::~LSTMLayer()
 
 std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_target, float* d_onevec)
 {
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_hiddenOutput, 0.f);
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_cellOutput, 0.f);
+	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_hiddenOutput, 0.f);
+	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_cellOutput, 0.f);
 
 	CheckError(cudnnRNNForwardTraining(handle,
 		m_rnnDesc,
@@ -231,169 +227,152 @@ std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle
 		m_srcDataDesc,
 		d_input,
 		m_hiddenInputDesc,
-		m_hiddenInput,
+		m_d_hiddenInput,
 		m_cellInputDesc,
-		m_cellInput,
+		m_d_cellInput,
 		m_weightsDesc,
-		m_weights,
+		m_d_weights,
 		m_dstDataDesc,
-		m_dstData,
+		m_d_dstData,
 		m_hiddenOutputDesc,
-		m_hiddenOutput,
+		m_d_hiddenOutput,
 		m_cellOutputDesc,
-		m_cellOutput,
-		m_workspace,
+		m_d_cellOutput,
+		m_d_workspace,
 		m_workSize,
-		m_reserveSpace,
+		m_d_reserveSpace,
 		m_reserveSize), __FILE__, __LINE__);
 
-	CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
+	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
-	/*Logger::instance()->writeLine("\tHidden");
-	printDeviceVectorToFile(10, m_hiddenInput, 0);*/
-
-	/*Logger::instance()->writeLine("\toutput");
-	printDeviceVectorToFile(10, m_dstData, 0);*/
-	//printDeviceVectorToFile(10, m_dstData, 0);
-
-	return std::make_tuple(0.f, m_dstData);
+	return std::make_tuple(0.f, m_d_dstData);
 }
 
 float* LSTMLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_loss_data, float* d_targets, float* d_onevec, float* d_previousLayerOutput) {
 	
-	Logger::instance()->writeLine("LSTMLayer bwd");
-
-	Logger::instance()->writeLine("\tdloss_data ======== 1");
-	printDeviceVectorToFile(10, d_loss_data, 0);
+/*
+// 	Logger::instance()->writeLine("LSTMLayer bwd");
+// 
+// 	Logger::instance()->writeLine("\tdloss_data ======== 1");
+// 	printDeviceVectorToFile(10, d_loss_data, 0);
+*/
 
 	updateGrad(handle, d_loss_data);
 
-	Logger::instance()->writeLine("\tdloss_data ======== 2");
-	printDeviceVectorToFile(10, d_loss_data, 0);
+/*
+// 	Logger::instance()->writeLine("\tdloss_data ======== 2");
+// 	printDeviceVectorToFile(10, d_loss_data, 0);
+*/
 
 	updateGradParameters(handle, d_loss_data);
-
+	/*
 	Logger::instance()->writeLine("\tafter dloss_data ======== 3");
-	printDeviceVectorToFile(10, d_loss_data, 0);
-	return m_gradientInput;
+	printDeviceVectorToFile(10, d_loss_data, 0);*/
+	return m_d_gradientInput;
 }
 
-void LSTMLayer::updateGrad(cudnnHandle_t& handle, float* grad)
+void LSTMLayer::updateGrad(cudnnHandle_t& handle, float* d_grad)
 {
-	FillVec(m_seqLength * m_inputSize * m_batchSize, m_gradientInput, 0.f);
+	FillVec(m_seqLength * m_inputSize * m_batchSize, m_d_gradientInput, 0.f);
 
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_gradientHiddenInput, 0.f);
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_gradientCellInput, 0.f);
+	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_gradientHiddenInput, 0.f);
+	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_gradientCellInput, 0.f);
 
 	CheckError(cudnnRNNBackwardData(handle,
 		m_rnnDesc,
 		m_seqLength,
 		m_dstDataDesc,
-		m_dstData,
+		m_d_dstData,
 		m_gradientOutputDesc,
-		grad, // Need to be fill
+		d_grad,
 		m_gradHiddenOutputDesc,
-		m_gradHiddenOutput, // Need to be fill
+		m_d_gradHiddenOutput,
 		m_gradCellOutputDesc,
-		m_gradCellOutput, // Need to be fill
+		m_d_gradCellOutput,
 		m_weightsDesc,
-		m_weights, // Update after forward?
+		m_d_weights,
 		m_hiddenInputDesc,
-		m_hiddenInput, // Need to be fill
+		m_d_hiddenInput,
 		m_cellInputDesc,
-		m_cellInput, // Need to be fill
+		m_d_cellInput,
 		m_gradientInputDesc,
-		m_gradientInput,
+		m_d_gradientInput,
 		m_gradientHiddenInputDesc,
-		m_gradientHiddenInput,
+		m_d_gradientHiddenInput,
 		m_gradientCellInputDesc,
-		m_gradientCellInput,
-		m_workspace,
+		m_d_gradientCellInput,
+		m_d_workspace,
 		m_workSize,
-		m_reserveSpace,
+		m_d_reserveSpace,
 		m_reserveSize), __FILE__, __LINE__);
 
 	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
-
-	/*if (FLAGS_DEBUG) {
-		logFile << "\tGradient output (backward)" << std::endl;
-		printDeviceVectorToFile(NBDATADSP, (float *)m_gradientInput, 0);
-	}*/
-
 }
 
-void LSTMLayer::updateGradParameters(cudnnHandle_t& handle, float* input)
+void LSTMLayer::updateGradParameters(cudnnHandle_t& handle, float* d_input)
 {
 
 	CheckError(cudnnRNNBackwardWeights(handle,
 		m_rnnDesc,
 		m_seqLength,
 		m_srcDataDesc,
-		input,
+		d_input,
 		m_hiddenInputDesc,
-		m_hiddenInput,
+		m_d_hiddenInput,
 		m_dstDataDesc,
-		m_dstData,
-		m_workspace,
+		m_d_dstData,
+		m_d_workspace,
 		m_workSize,
 		m_weightsGradientDesc,
-		m_weightsGradient,
-		m_reserveSpace,
+		m_d_weightsGradient,
+		m_d_reserveSpace,
 		m_reserveSize), __FILE__, __LINE__);
 
 	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
-	/*if (FLAGS_DEBUG) {
-		logFile << "\tWeights (backward)" << std::endl;
-		printDeviceVectorToFile(NBDATADSP, (float *)m_weights, 0);
-		logFile << "\tWeights Gradient (backward)" << std::endl;
-		printDeviceVectorToFile(NBDATADSP, (float *)m_weightsGradient, 0);
-	}*/
 }
 
 void LSTMLayer::batchInit()
 {
 	int s = m_layerNumber * m_hiddenSize * m_batchSize;
 
-	if (m_hiddenInput != NULL)
-		FillVec(s, m_hiddenInput, 0.f);
-	if (m_cellInput != NULL)
-		FillVec(s, m_cellInput, 0.f);
+	if (m_d_hiddenInput != NULL)
+		FillVec(s, m_d_hiddenInput, 0.f);
+	if (m_d_cellInput != NULL)
+		FillVec(s, m_d_cellInput, 0.f);
 
 	s = m_seqLength * m_hiddenSize * m_batchSize;
-	FillVec(s, m_gradientOutput, 0.f);
+	FillVec(s, m_d_gradientOutput, 0.f);
 
 	s = m_layerNumber * m_hiddenSize * m_batchSize;
-	if (m_gradHiddenOutput != NULL)
-		FillVec(s, m_gradHiddenOutput, 0.f);
-	if (m_gradCellOutput != NULL)
-		FillVec(s, m_gradCellOutput, 0.f);
+	if (m_d_gradHiddenOutput != NULL)
+		FillVec(s, m_d_gradHiddenOutput, 0.f);
+	if (m_d_gradCellOutput != NULL)
+		FillVec(s, m_d_gradCellOutput, 0.f);
 
-	CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
+	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 }
 
 void LSTMLayer::initWeights(cudnnHandle_t& handle) {
 	// Initialize weights
 	int numLinearLayers = 8; // 2 for RELU/TANH, 8 for LSTM and 6 for GRU
 	int totalNbParams = 0;
-	/*if (FLAGS_DEBUG) {
-		logFile << "==========================================================" << std::endl;
-	}*/
+
 	for (int layer = 0; layer < m_layerNumber; layer++) {
 		int nbParams = 0;
 		for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
 			cudnnFilterDescriptor_t linLayerMatDesc;
 			CheckError(cudnnCreateFilterDescriptor(&linLayerMatDesc), __FILE__, __LINE__);
-			float *linLayerMat;
+			float *d_linLayerMat;
 
 			CheckError(cudnnGetRNNLinLayerMatrixParams(handle,
 				m_rnnDesc,
 				layer,
 				m_srcDataDesc[0],
 				m_weightsDesc,
-				m_weights,
+				m_d_weights,
 				linLayerID,
 				linLayerMatDesc,
-				(void**)&linLayerMat), __FILE__, __LINE__);
+				(void**)&d_linLayerMat), __FILE__, __LINE__);
 
 			cudnnDataType_t dataType;
 			cudnnTensorFormat_t format;
@@ -406,17 +385,7 @@ void LSTMLayer::initWeights(cudnnHandle_t& handle) {
 				&nbDims,
 				filterDimA), __FILE__, __LINE__);
 
-			//initGPUData(linLayerMat, filterDimA[0] * filterDimA[1] * filterDimA[2], 1.f / (float)(filterDimA[0] * filterDimA[1] * filterDimA[2]));
-			/*
-			std::default_random_engine generator;
-			std::uniform_real_distribution<float> distribution(-0.08f, 0.08f);*/
-			/*float* localLinMat = new float[filterDimA[0] * filterDimA[1] * filterDimA[2]];
-			for (int i = 0; i < filterDimA[0] * filterDimA[1] * filterDimA[2]; i++) {
-				localLinMat[i] = distribution(generator);
-			}
-			cudaMemcpy(linLayerMat, localLinMat, filterDimA[0] * filterDimA[1] * filterDimA[2] * m_dataTypeSize, cudaMemcpyHostToDevice);*/
-
-			initDataDistributed(-0.08f, 0.08f, linLayerMat, filterDimA[0] * filterDimA[1] * filterDimA[2]);
+			initDataDistributed(-0.08f, 0.08f, d_linLayerMat, filterDimA[0] * filterDimA[1] * filterDimA[2]);
 
 			nbParams += filterDimA[0] * filterDimA[1] * filterDimA[2];
 
@@ -424,17 +393,17 @@ void LSTMLayer::initWeights(cudnnHandle_t& handle) {
 
 			cudnnFilterDescriptor_t linLayerBiasDesc;
 			CheckError(cudnnCreateFilterDescriptor(&linLayerBiasDesc), __FILE__, __LINE__);
-			float *linLayerBias;
+			float *d_linLayerBias;
 
 			CheckError(cudnnGetRNNLinLayerBiasParams(handle,
 				m_rnnDesc,
 				layer,
 				m_srcDataDesc[0],
 				m_weightsDesc,
-				m_weights,
+				m_d_weights,
 				linLayerID,
 				linLayerBiasDesc,
-				(void**)&linLayerBias), __FILE__, __LINE__);
+				(void**)&d_linLayerBias), __FILE__, __LINE__);
 
 			CheckError(cudnnGetFilterNdDescriptor(linLayerBiasDesc,
 				3,
@@ -443,27 +412,18 @@ void LSTMLayer::initWeights(cudnnHandle_t& handle) {
 				&nbDims,
 				filterDimA), __FILE__, __LINE__);
 
-			//initGPUData(linLayerBias, filterDimA[0] * filterDimA[1] * filterDimA[2], 1.f);
-			FillVec(filterDimA[0] * filterDimA[1] * filterDimA[2], linLayerBias, 1.f);
+			FillVec(filterDimA[0] * filterDimA[1] * filterDimA[2], d_linLayerBias, 1.f);
 
 			nbParams += filterDimA[0] * filterDimA[1] * filterDimA[2];
 			CheckError(cudnnDestroyFilterDescriptor(linLayerBiasDesc), __FILE__, __LINE__);
 		}
 		totalNbParams += nbParams;
-		/*if (FLAGS_DEBUG) {
-			logFile << "Layer\t" << layer << "\t" << nbParams << std::endl;
-		}*/
 	}
-
-	/*if (FLAGS_DEBUG) {
-		logFile << "Totals\t\t" << totalNbParams << std::endl;
-		logFile << "==========================================================" << std::endl;
-	}*/
 }
 
 void LSTMLayer::initEpoch(cudnnHandle_t & handle)
 {
-	CheckError(cudaMemset(m_weightsGradient, 0.f, m_weightsSize), __FILE__, __LINE__);
+	CheckError(cudaMemset(m_d_weightsGradient, 0.f, m_weightsSize), __FILE__, __LINE__);
 }
 
 void LSTMLayer::updateWeight(cublasHandle_t& cublasHandle, float lr) {
@@ -473,5 +433,5 @@ void LSTMLayer::updateWeight(cublasHandle_t& cublasHandle, float lr) {
 		&alpha, m_gradientHiddenInput, 1, m_hiddenInput, 1), __FILE__, __LINE__);*/
 
 	CheckError(cublasSaxpy(cublasHandle, m_weightsSize/m_dataTypeSize,
-		&alpha, m_weightsGradient, 1, m_weights, 1), __FILE__, __LINE__);
+		&alpha, m_d_weightsGradient, 1, m_d_weights, 1), __FILE__, __LINE__);
 }

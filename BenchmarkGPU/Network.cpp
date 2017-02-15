@@ -10,21 +10,12 @@
 #include <sstream>
 #include <vector>
 #include <tuple>
-#include <device_launch_parameters.h>
 
 #include "Layer.h"
 #include "Network.h"
 #include "Logger.h"
 #include "GenericFunctions.h"
-
-__global__ void PrepareDataKernel(float* d_batchData, float* d_batchTarget, int start, int end, float* d_input, float* d_targets) {
-	int idx = blockDim.x * blockIdx.x + threadIdx.x;
-	if (idx + start >= end) return;
-
-	d_batchData[idx] = d_input[idx + start];
-	d_batchTarget[2 * idx] = d_targets[2 * (idx + start)];
-	d_batchTarget[(2 * (idx + 1)) - 1] = d_targets[(2 * (idx + start + 1)) - 1];
-}
+#include "GPUKernel.cuh"
 
 Network::Network() : Network(128, 0.01f, 4, 1, 1) {}
 
@@ -102,7 +93,7 @@ void Network::train(float* d_data, float* d_labels, int epochNumber, int nbData)
 	for (Layer& l : m_layers)
 		l.initWeights(m_handle);
 
-	CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
+	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
 	int nbBatch = std::ceil(double(nbData) / double(m_batchSize));
 	toWrite.str("");
@@ -164,7 +155,7 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 		CheckError(cudaMalloc((void**)&d_bTargets, 2 * m_seqLength * m_inputDim * m_batchSize * sizeof(float)), __FILE__, __LINE__);
 
 		// Get data and target for current batch
-		prepareData(d_input, d_targets, b, d_bData, d_bTargets);
+		prepareData(d_input, d_targets, b, d_bData, d_bTargets, m_inputDim, m_batchSize);
 
 		curNbBatch += m_batchSize;
 		toWrite.str("");
@@ -172,13 +163,20 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 		toWrite << "Epoch " << (epoch + 1) << " / " << nbEpoch << " [" << curNbBatch << " / " << nbData << "]";
 		Logger::instance()->writeLine(toWrite.str());
 
-		CheckError(cudaMalloc(&d_onevec, sizeof(float)* m_batchSize), __FILE__, __LINE__);
+		CheckError(cudaMalloc(&d_onevec, sizeof(float) * m_batchSize), __FILE__, __LINE__);
 		FillVec(m_batchSize, d_onevec, 0.f);
+
+		std::vector<float*> d_output;
+
 		// Forward pass + get error
-		auto resultFwd = forward(d_bTargets, d_bTargets, d_onevec);
+		auto resultFwd = forward(d_bTargets, d_bTargets, d_onevec, &d_output);
+
+		CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
 		//Backward pass
-		backward(std::get<1>(resultFwd), d_bTargets, d_onevec);
+		backward(d_output, d_bTargets, d_onevec);
+
+		CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
 		// Updating weights
 		for (auto it = m_layers.begin(); it != m_layers.end(); ++it) {
@@ -187,76 +185,67 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 
 		toWrite.str("");
 		toWrite.clear();
-		toWrite << "\tError " << std::get<0>(resultFwd);
+		toWrite << "\tBatch Error " << resultFwd;
 		Logger::instance()->writeLine(toWrite.str());
 
-		error += std::get<0>(resultFwd);
+		error += resultFwd;
+		
 		//validateBatch();
+		CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
+
+		/*for (auto o : d_output) {
+			CheckError(cudaFree(o), __FILE__, __LINE__);
+		}
 
 		CheckError(cudaFree(d_bData), __FILE__, __LINE__);
 		CheckError(cudaFree(d_bTargets), __FILE__, __LINE__);
-		CheckError(cudaFree(d_onevec), __FILE__, __LINE__);
+		CheckError(cudaFree(d_onevec), __FILE__, __LINE__);*/
 	}
 	error /= nbBatch;
 	toWrite.str("");
 	toWrite.clear();
-	toWrite << "Batch Error " << error;
+	toWrite << "Epoch average Error " << error;
 	Logger::instance()->writeLine(toWrite.str());
 }
 
-std::tuple<float, std::vector<float*>> Network::forward(float* d_input, float* d_target, float* d_onevec)
+float Network::forward(float* d_input, float* d_target, float* d_onevec, std::vector<float*>* d_output)
 {
 	float error = 0;
 	std::vector<std::reference_wrapper<Layer>>::iterator it = m_layers.begin();
-	std::vector<float*> output;
+	
 	std::tuple<float, float*> result = it->get().forward(m_handle, m_cublasHandle, d_input, d_target, d_onevec);
-	output.push_back(std::get<1>(result));
+	d_output->push_back(std::get<1>(result));
 	it++;
 	for (; it != m_layers.end(); ++it) {
-		result = it->get().forward(m_handle, m_cublasHandle, output.back(), d_target, d_onevec);
-		output.push_back(std::get<1>(result));
+		result = it->get().forward(m_handle, m_cublasHandle, d_output->back(), d_target, d_onevec);
+		d_output->push_back(std::get<1>(result));
 		error += std::get<0>(result);
 	}
-	return std::tuple<float, std::vector<float*>>(error, output);
+	return error;
 }
 
-void Network::backward(std::vector<float*> fwdOutput, float* target, float* d_onevec)
+void Network::backward(std::vector<float*>& fwdOutput, float* target, float* d_onevec)
 {
-	float* dloss_data;
-
-	CheckError(cudaMalloc(&dloss_data, sizeof(float) * m_batchSize * m_outputDim), __FILE__, __LINE__);
-	CheckError(cudaMemcpyAsync(dloss_data, fwdOutput.back(), sizeof(float) * m_batchSize * m_outputDim, cudaMemcpyDeviceToDevice), __FILE__, __LINE__);
+	float* d_loss_data;
+	CheckError(cudaMalloc(&d_loss_data, sizeof(float) * m_batchSize * m_outputDim), __FILE__, __LINE__);
+	CheckError(cudaMemcpy(d_loss_data, fwdOutput.back(), sizeof(float) * m_batchSize * m_outputDim, cudaMemcpyDeviceToDevice), __FILE__, __LINE__);
 	
 	// Accounting for batch size in SGD
 	//CheckError(cublasSscal(m_cublasHandle, m_outputDim * m_batchSize, &scalVal, dloss_data, 1), __FILE__, __LINE__);
 	std::vector<std::reference_wrapper<Layer>>::reverse_iterator it = m_layers.rbegin();
-	float* result = it->get().backward(m_handle, m_cublasHandle, dloss_data, target, d_onevec, fwdOutput[fwdOutput.size() - 1]);
+	float* result = it->get().backward(m_handle, m_cublasHandle, d_loss_data, target, d_onevec, fwdOutput[fwdOutput.size() - 1]);
 
 	++it;
 
 	for (int i = fwdOutput.size() - 2; it != m_layers.rend(); ++it, i--) {
 		result = it->get().backward(m_handle, m_cublasHandle, result, target, d_onevec, fwdOutput[i]);
 	}
+
+	CheckError(cudaFree(result), __FILE__, __LINE__);
+	CheckError(cudaFree(d_loss_data), __FILE__, __LINE__);
 }
 
-void Network::prepareData(float* d_input, float* d_target, int b, float* d_batchData, float* d_batchTarget) {
-
-	int start = b*m_inputDim;
-	int end = (b + m_batchSize)*m_inputDim;
-	int size = end - start;
-
-	PrepareDataKernel <<< RoundUp(size, 128), 128 >>> (d_batchData, d_batchTarget, start, end, d_input, d_target);
-
-	//
-	//	Loading data for this batch
-	//
-	/*int srcSize = m_inputDim * m_batchSize;
-	float* batchData = new float[srcSize];
-
-	for (int i = b*m_inputDim, j = 0; i < (b + m_batchSize)*m_inputDim; i++, j++) {
-		batchData[j] = input[i];
-		bTarget[j] = target[i];
-	}
-	cudaMemcpy(d_batchData, batchData, m_batchSize*m_inputDim * sizeof(float), cudaMemcpyHostToDevice);
-	delete[] batchData;*/
+void Network::validateBatch()
+{
+	throw std::logic_error("The method or operation is not implemented.");
 }

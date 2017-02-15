@@ -13,10 +13,13 @@
 #include "LSTMLayer.h"
 #include "FullyConnectedLayer.h"
 #include "SoftmaxLayer.h"
+#include "GPUKernel.cuh"
 
 int main(int argc, char** argv) {
 	
 	Logger::instance()->setFile("BenchmarkGPU.log");
+
+	//*Logger::instance() << "toto";
 
 	Params p = Params::load(argc, argv);
 	p.writeParamsToFile();
@@ -39,8 +42,11 @@ int main(int argc, char** argv) {
 
 	n->train(d_data, d_targets, p["epoch"], p["nbData"]);
 
-	delete n;
+	Logger::instance()->flush();
+	CheckError(cudaFree(d_data), __FILE__, __LINE__);
+	CheckError(cudaFree(d_targets), __FILE__, __LINE__);
 
+	delete n;
 	/*std::cout << "Press a key to continue..." << std::endl;
 	std::cin.ignore();*/
 

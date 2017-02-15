@@ -41,9 +41,8 @@ public:
 	cudnnHandle_t& getHandle();
 private:
 	void trainEpoch(int, int, int, int, float*, float*);
-	std::tuple<float, std::vector<float*>> forward(float*, float*, float*);
-	void backward(std::vector<float*>, float*, float*);
-	void prepareData(float*, float*, int, float*, float*);
+	float forward(float*, float*, float*, std::vector<float*>*);
+	void backward(std::vector<float*>&, float*, float*);
 
 private:
 	int m_gpuid;
@@ -57,6 +56,7 @@ private:
 	cublasHandle_t m_cublasHandle;
 
 	std::vector<std::reference_wrapper<Layer>> m_layers;
+	void validateBatch();
 };
 
 #endif // __BENCHMARKGPU_TRAINER_H

@@ -28,13 +28,21 @@ void Logger::setFile(std::string logPath)
 
 void Logger::writeLine(std::string line)
 {
+	lines.push_back(line);
+}
+
+void Logger::flush() {
 	m_logFile.precision(3);
 	m_logFile.setf(std::ios::fixed, std::ios::floatfield);
-	m_logFile << line << std::endl;
+	for(auto line : lines){
+		m_logFile << line << std::endl;
+	}
+	lines.clear();
 	m_logFile.flush();
 }
 
-/*template<typename T>
+/*
+template<typename T>
 Logger & operator<<(Logger & os, T & t const)
 {
 	os.m_logFile.precision(3);
@@ -42,8 +50,8 @@ Logger & operator<<(Logger & os, T & t const)
 	os.m_logFile << T << std::endl;
 	os.m_logFile.flush();
 	return os;
-}*/
-/*
+}
+
 Logger& operator<<(Logger& os, std::ostream&(*f)(std::ostream&))
 {
 	os.m_logFile.precision(3);
