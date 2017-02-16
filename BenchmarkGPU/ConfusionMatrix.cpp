@@ -18,7 +18,7 @@ ConfusionMatrix::~ConfusionMatrix()
 {
 }
 
-void ConfusionMatrix::evaluate(float* d_data, float* d_target, int size, int nbClass)
+float ConfusionMatrix::evaluate(float* d_data, float* d_target, int size, int nbClass)
 {
 	/*float* d_matrix;
 	int fullSize = nbClass * size;
@@ -32,19 +32,40 @@ void ConfusionMatrix::evaluate(float* d_data, float* d_target, int size, int nbC
 	float* targets = new float[size * nbClass];
 	cudaMemcpy(results, d_data, size * nbClass * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(targets, d_target, size * nbClass * sizeof(float), cudaMemcpyDeviceToHost);
-	for (auto i = 0; i < size; i++) {
-		ss << i << "\t";
-		for (auto j = 0; j < nbClass; j++) {
-			ss << results[i*nbClass + j] << "\t";
-		}
-		ss << "(";
-		for (auto j = 0; j < nbClass; j++) {
-			ss << targets[i*nbClass + j] << "\t";
-		}
-		ss << ")" << std::endl;
-	}
+	
+	int numCorrect = 0;
+	int numWrong = 0;
 
-	/*ss << "\t";
+	for (auto i = 0; i < size; i++) {
+		int classDetected = 0;
+		int classExpected = 0;
+		//ss << "i (" << i << ") : ";
+		for (auto j = 1; j < nbClass; j++) {
+			//float realOutput = results[i*nbClass + j] < 0.5 ? 0.f : 1.f;
+			//ss << results[i*nbClass + j] << "\t";
+			if (results[i*nbClass + j] > results[i*nbClass + classDetected]) {
+				classDetected = j;
+			}
+		}
+		for (auto j = 1; j < nbClass; j++) {
+			//float realOutput = results[i*nbClass + j] < 0.5 ? 0.f : 1.f;
+			if (targets[i*nbClass + j] > targets[i*nbClass + classExpected]) {
+				classExpected = j;
+			}
+		}
+		//ss << " // " << classDetected << " ---- " << classExpected << std::endl;
+		if (targets[i*nbClass + classDetected] == 1.f) {
+			++numCorrect;
+		}
+		else {
+			++numWrong;
+		}
+	}
+	float acc = (numCorrect * 1.0) / (numCorrect + numWrong);
+	return acc;
+	//ss << "Accuracy : " << acc << std::endl;
+	/*
+	ss << "\t";
 	for (auto i = 0; i < nbClass; i++)
 		ss << i << "\t";
 	ss << "< Class" << std::endl;
@@ -55,6 +76,6 @@ void ConfusionMatrix::evaluate(float* d_data, float* d_target, int size, int nbC
 		}
 		ss << std::endl;
 	}*/
-	Logger::instance()->writeLine(ss.str());
-	Logger::instance()->flush();
+	//Logger::instance()->writeLine(ss.str());
+	//Logger::instance()->flush();
 }

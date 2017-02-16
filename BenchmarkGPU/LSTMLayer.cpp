@@ -221,6 +221,7 @@ std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle
 	if (training) {
 		FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_hiddenOutput, 0.f);
 		FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_cellOutput, 0.f);
+		FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_dstData, 0.f);
 
 		CheckError(cudnnRNNForwardTraining(handle,
 			m_rnnDesc,
@@ -273,24 +274,9 @@ std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle
 
 float* LSTMLayer::backward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_loss_data, float* d_targets, float* d_onevec, float* d_previousLayerOutput) {
 	
-/*
-// 	Logger::instance()->writeLine("LSTMLayer bwd");
-// 
-// 	Logger::instance()->writeLine("\tdloss_data ======== 1");
-// 	printDeviceVectorToFile(10, d_loss_data, 0);
-*/
-
 	updateGrad(handle, d_loss_data);
-
-/*
-// 	Logger::instance()->writeLine("\tdloss_data ======== 2");
-// 	printDeviceVectorToFile(10, d_loss_data, 0);
-*/
-
 	updateGradParameters(handle, d_loss_data);
-	/*
-	Logger::instance()->writeLine("\tafter dloss_data ======== 3");
-	printDeviceVectorToFile(10, d_loss_data, 0);*/
+
 	return m_d_gradientInput;
 }
 

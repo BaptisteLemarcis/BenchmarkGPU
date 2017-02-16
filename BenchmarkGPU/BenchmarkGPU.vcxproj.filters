@@ -31,6 +31,12 @@
     <ClCompile Include="Logger.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="Criterion.cpp">
+      <Filter>src\criterion</Filter>
+    </ClCompile>
+    <ClCompile Include="MeanSquaredError.cpp">
+      <Filter>src\criterion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FullyConnectedLayer.h">
@@ -63,6 +69,12 @@
     <ClInclude Include="Logger.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="Criterion.h">
+      <Filter>include\criterion</Filter>
+    </ClInclude>
+    <ClInclude Include="MeanSquaredError.h">
+      <Filter>include\criterion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -88,6 +100,12 @@
     </Filter>
     <Filter Include="src\stats">
       <UniqueIdentifier>{02c865a7-95e4-480e-afdd-14889ae6afd5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\criterion">
+      <UniqueIdentifier>{c62b1435-d537-47e9-a4b3-d1ae2a8ce996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\criterion">
+      <UniqueIdentifier>{946d2c4d-624d-4669-b42b-5f596a63d5c8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

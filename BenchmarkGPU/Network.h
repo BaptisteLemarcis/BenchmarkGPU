@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ConfusionMatrix.h"
+#include "Criterion.h"
 #include "Layer.h"
 
 class Network {
@@ -22,9 +23,10 @@ public:
 	*	\param learningRate - 
 	*	\param inputSize - Number of features
 	*	\param outputDim -
+	*	\param criterion - MSE,...
 	*	\param seqLength -
 	*/
-	Network(int, float, int, int, int);
+	Network(int, float, int, int, Criterion*, int);
 
 	~Network();
 
@@ -41,10 +43,10 @@ public:
 
 	cudnnHandle_t& getHandle();
 private:
-	void trainEpoch(int, int, int, int, float*, float*);
-	float forward(float*, float*, float*, std::vector<float*>*, bool);
+	float trainEpoch(int, int, int, int, float*, float*);
+	void forward(float*, float*, float*, std::vector<float*>*, bool);
 	void backward(std::vector<float*>&, float*, float*);
-	void validateBatch(float*, float*, float*);
+	float validateBatch(float*, float*, float*);
 
 private:
 	int m_gpuid;
@@ -60,6 +62,8 @@ private:
 	cublasHandle_t m_cublasHandle;
 
 	std::vector<std::reference_wrapper<Layer>> m_layers;
+
+	Criterion* m_criterion;
 };
 
 #endif // __BENCHMARKGPU_TRAINER_H

@@ -14,6 +14,7 @@
 #include "FullyConnectedLayer.h"
 #include "SoftmaxLayer.h"
 #include "GPUKernel.cuh"
+#include "MeanSquaredError.h"
 
 int main(int argc, char** argv) {
 	
@@ -30,7 +31,9 @@ int main(int argc, char** argv) {
 	CheckError(cudaMalloc((void**)&d_targets, p["outputDim"] * dataSize * sizeof(float)), __FILE__, __LINE__);
 	generateData(dataSize, d_data, d_targets);
 
-	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["outputDim"], p["seqLength"]);
+	MeanSquaredError mse;
+
+	Network* n = new Network(p["batchSize"], p["learningRate"], p["inputSize"], p["outputDim"], &mse, p["seqLength"]);
 
 	LSTMLayer lstm(n->getHandle(), p["inputSize"], p["hiddenSize"], p["nbLayers"], p["batchSize"], p["seqLength"], p["dropout"]);
 	FullyConnectedLayer fc(p["hiddenSize"], p["outputDim"], p["batchSize"]);

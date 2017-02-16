@@ -172,6 +172,7 @@ del *.iobj</Command>
   <ItemGroup>
     <ClCompile Include="Benchmark.cpp" />
     <ClCompile Include="ConfusionMatrix.cpp" />
+    <ClCompile Include="Criterion.cpp" />
     <ClCompile Include="FullyConnectedLayer.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
@@ -182,6 +183,7 @@ del *.iobj</Command>
     <ClCompile Include="LSTMLayer.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
+    <ClCompile Include="MeanSquaredError.cpp" />
     <ClCompile Include="Network.cpp">
       <FileType>Document</FileType>
     </ClCompile>
@@ -192,12 +194,14 @@ del *.iobj</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConfusionMatrix.h" />
+    <ClInclude Include="Criterion.h" />
     <ClInclude Include="FullyConnectedLayer.h" />
     <ClInclude Include="GenericFunctions.h" />
     <ClInclude Include="GPUKernel.cuh" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="LSTMLayer.h" />
+    <ClInclude Include="MeanSquaredError.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="Params.h" />
     <ClInclude Include="SoftmaxLayer.h" />
