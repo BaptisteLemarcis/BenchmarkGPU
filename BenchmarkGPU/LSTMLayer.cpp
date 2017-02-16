@@ -216,32 +216,55 @@ LSTMLayer::~LSTMLayer()
 	CheckError(cudaDeviceReset(), __FILE__, __LINE__);
 }
 
-std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_target, float* d_onevec)
+std::tuple<float, float*> LSTMLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_target, float* d_onevec, bool training)
 {
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_hiddenOutput, 0.f);
-	FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_cellOutput, 0.f);
+	if (training) {
+		FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_hiddenOutput, 0.f);
+		FillVec(m_layerNumber * m_hiddenSize * m_batchSize, m_d_cellOutput, 0.f);
 
-	CheckError(cudnnRNNForwardTraining(handle,
-		m_rnnDesc,
-		m_seqLength,
-		m_srcDataDesc,
-		d_input,
-		m_hiddenInputDesc,
-		m_d_hiddenInput,
-		m_cellInputDesc,
-		m_d_cellInput,
-		m_weightsDesc,
-		m_d_weights,
-		m_dstDataDesc,
-		m_d_dstData,
-		m_hiddenOutputDesc,
-		m_d_hiddenOutput,
-		m_cellOutputDesc,
-		m_d_cellOutput,
-		m_d_workspace,
-		m_workSize,
-		m_d_reserveSpace,
-		m_reserveSize), __FILE__, __LINE__);
+		CheckError(cudnnRNNForwardTraining(handle,
+			m_rnnDesc,
+			m_seqLength,
+			m_srcDataDesc,
+			d_input,
+			m_hiddenInputDesc,
+			m_d_hiddenInput,
+			m_cellInputDesc,
+			m_d_cellInput,
+			m_weightsDesc,
+			m_d_weights,
+			m_dstDataDesc,
+			m_d_dstData,
+			m_hiddenOutputDesc,
+			m_d_hiddenOutput,
+			m_cellOutputDesc,
+			m_d_cellOutput,
+			m_d_workspace,
+			m_workSize,
+			m_d_reserveSpace,
+			m_reserveSize), __FILE__, __LINE__);
+	} else {
+		CheckError(cudnnRNNForwardInference(handle,
+			m_rnnDesc,
+			m_seqLength,
+			m_srcDataDesc,
+			d_input,
+			m_hiddenInputDesc,
+			m_d_hiddenInput,
+			m_cellInputDesc,
+			m_d_cellInput,
+			m_weightsDesc,
+			m_d_weights,
+			m_dstDataDesc,
+			m_d_dstData,
+			m_hiddenOutputDesc,
+			m_d_hiddenOutput,
+			m_cellOutputDesc,
+			m_d_cellOutput,
+			m_d_workspace,
+			m_workSize), __FILE__, __LINE__);
+	}
+	
 
 	//CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
@@ -429,8 +452,8 @@ void LSTMLayer::initEpoch(cudnnHandle_t & handle)
 void LSTMLayer::updateWeight(cublasHandle_t& cublasHandle, float lr) {
 	float alpha = -lr;
 
-	/*CheckError(cublasSaxpy(cublasHandle, m_layerNumber*m_batchSize*m_hiddenSize,
-		&alpha, m_gradientHiddenInput, 1, m_hiddenInput, 1), __FILE__, __LINE__);*/
+	CheckError(cublasSaxpy(cublasHandle, m_layerNumber*m_batchSize*m_hiddenSize,
+		&alpha, m_d_gradientHiddenInput, 1, m_d_hiddenInput, 1), __FILE__, __LINE__);
 
 	CheckError(cublasSaxpy(cublasHandle, m_weightsSize/m_dataTypeSize,
 		&alpha, m_d_weightsGradient, 1, m_d_weights, 1), __FILE__, __LINE__);

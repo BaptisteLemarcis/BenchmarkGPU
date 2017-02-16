@@ -33,7 +33,7 @@ FullyConnectedLayer::~FullyConnectedLayer()
 {
 }
 
-std::tuple<float, float*> FullyConnectedLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_target, float* d_onevec)
+std::tuple<float, float*> FullyConnectedLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_target, float* d_onevec, bool training)
 {
 	float alpha = 1.0f, beta = 0.0f;
 	float* d_outpout;

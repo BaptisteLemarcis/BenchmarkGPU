@@ -19,6 +19,7 @@ public:
 	void setFile(std::string);
 	void writeLine(std::string);
 	void flush();
+	void setPrecision(int);
 	/*friend Logger<T>& operator<<(Logger &os, const T &t);
 	friend Logger& operator<<(Logger& os, std::ostream&(*f)(std::ostream&));*/
 private:

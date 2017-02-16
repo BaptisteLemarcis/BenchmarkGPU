@@ -7,9 +7,6 @@
     <ClCompile Include="Layer.cpp">
       <Filter>src\nn\layer</Filter>
     </ClCompile>
-    <ClCompile Include="Logger.cpp">
-      <Filter>src\nn</Filter>
-    </ClCompile>
     <ClCompile Include="Params.cpp">
       <Filter>src\nn</Filter>
     </ClCompile>
@@ -27,6 +24,12 @@
     </ClCompile>
     <ClCompile Include="FullyConnectedLayer.cpp">
       <Filter>src\nn\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfusionMatrix.cpp">
+      <Filter>src\stats</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -48,14 +51,17 @@
     <ClInclude Include="GenericFunctions.h">
       <Filter>include\nn</Filter>
     </ClInclude>
-    <ClInclude Include="Logger.h">
-      <Filter>include\nn</Filter>
-    </ClInclude>
     <ClInclude Include="Network.h">
       <Filter>include\nn</Filter>
     </ClInclude>
+    <ClInclude Include="ConfusionMatrix.h">
+      <Filter>include\stats</Filter>
+    </ClInclude>
     <ClInclude Include="GPUKernel.cuh">
-      <Filter>include\nn</Filter>
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -77,10 +83,16 @@
     <Filter Include="include\nn\layer">
       <UniqueIdentifier>{b370ec4d-b4ec-4dc6-b81f-3f88ea6e9a9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="include\stats">
+      <UniqueIdentifier>{935464fe-fd33-4bde-88af-d16a50026bb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\stats">
+      <UniqueIdentifier>{02c865a7-95e4-480e-afdd-14889ae6afd5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GPUKernel.cu">
-      <Filter>src\nn</Filter>
+      <Filter>src</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

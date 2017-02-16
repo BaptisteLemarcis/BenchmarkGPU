@@ -9,3 +9,5 @@ void prepareData(float*, float*, int, float*, float*, int, int);
 void softmaxError(int, float*, float*, float*);
 
 void softmaxLoss(int, int, float*, float*);
+
+void computeConfusionMatrix(float*, float*, float*, int, int);

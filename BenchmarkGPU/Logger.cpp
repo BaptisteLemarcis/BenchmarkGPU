@@ -6,7 +6,10 @@
 
 Logger *Logger::m_instance;
 
-Logger::Logger(){}
+Logger::Logger(){
+	m_logFile.precision(3);
+	//m_logFile.setf(std::ios::fixed, std::ios::floatfield);
+}
 
 Logger* Logger::instance()
 {
@@ -32,13 +35,16 @@ void Logger::writeLine(std::string line)
 }
 
 void Logger::flush() {
-	m_logFile.precision(3);
-	m_logFile.setf(std::ios::fixed, std::ios::floatfield);
 	for(auto line : lines){
 		m_logFile << line << std::endl;
 	}
 	lines.clear();
 	m_logFile.flush();
+}
+
+void Logger::setPrecision(int pre)
+{
+	m_logFile.precision(pre);
 }
 
 /*

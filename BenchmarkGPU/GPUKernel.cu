@@ -81,16 +81,26 @@ __global__ void SoftmaxLossKernel(float* d_target, float* d_loss_data, int size)
 __global__ void SoftmaxErrorKernel(float* d_error, float* d_input, float* d_targets, int size) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;
 	int idx1 = 2 * idx;
-	int idx2 = (2 * (idx + 1)) - 1;
+	int idx2 = idx1 + 1;
 
 	/*int idx3 = 2 * (idx+1);
 	int idx4 = (2 * ((idx+1) + 1)) - 1;*/
 
 	if (idx <= size) return;
 	float z = d_input[idx1] - d_targets[idx1];
-	*d_error += z*z;
+	*d_error = *d_error + (z*z);
 	z = d_input[idx2] - d_targets[idx2];
-	*d_error += z*z;
+	*d_error = *d_error + (z*z);
+}
+
+__global__ void ComputeConfusionMatrixKernel(float* d_input, float* d_targets, float* d_results, int size, int nbClass) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+	
+	if (idx >= size) return;
+
+	if (d_input[idx] != d_targets[idx]) {
+		d_results[(idx%nbClass)] += 1.f;
+	}
 }
 
 void initDataDistributed(float min, float max, float* d_vec, int size) {
@@ -128,4 +138,12 @@ void softmaxLoss(int batchSize, int inputDim, float* d_targets, float* d_loss_da
 	dim3 t = { BW , 1, 1 };
 
 	SoftmaxLossKernel <<<b, t >>>(d_targets, d_loss_data, batchSize*inputDim);
+}
+
+void computeConfusionMatrix(float* d_input, float* d_target, float* d_results, int size, int nbClass)
+{
+	std::stringstream ss("");
+	ss << "Size : " << size << std::endl;
+	Logger::instance()->writeLine(ss.str());
+	ComputeConfusionMatrixKernel <<<RoundUp(size*nbClass, BW), BW >> >(d_input, d_target, d_results, size*nbClass, nbClass);
 }

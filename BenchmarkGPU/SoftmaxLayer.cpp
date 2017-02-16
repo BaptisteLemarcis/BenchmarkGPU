@@ -41,7 +41,7 @@ SoftmaxLayer::~SoftmaxLayer()
 	CheckError(cudnnDestroyTensorDescriptor(m_outputDesc), __FILE__, __LINE__);
 }
 
-std::tuple<float, float*> SoftmaxLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_targets, float* d_onevec)
+std::tuple<float, float*> SoftmaxLayer::forward(cudnnHandle_t& handle, cublasHandle_t& cublasHandle, float* d_input, float* d_targets, float* d_onevec, bool training)
 {
 	float alpha = float(1);
 	float beta = float(0);
@@ -60,25 +60,27 @@ std::tuple<float, float*> SoftmaxLayer::forward(cudnnHandle_t& handle, cublasHan
 		m_d_output), __FILE__, __LINE__);
 
 	//printDeviceVectorToFile(2, m_output, 0);
-	float* d_batchError, batchError;
+	/*float* d_batchError, batchError;
 	CheckError(cudaMalloc(&d_batchError, sizeof(float)), __FILE__, __LINE__);
 
 	softmaxError(m_batchSize, d_batchError, d_input, d_targets);
 
-	CheckError(cudaMemcpy(&batchError, d_batchError, sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);
-	
-	/*for (int i = 0; i < m_batchSize; i++) {
-		float* output = new float[getOutputDim() * m_batchSize];
-		float* target = targets[i];
-		CheckError(cudaMemcpy(output, input, getOutputDim() * m_batchSize * sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);
+	CheckError(cudaMemcpy(&batchError, d_batchError, sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);*/
+	float* targets = new float[m_batchSize*m_outputDim];
+	float* output = new float[m_batchSize*m_outputDim];
+	float batchError = 0.f;
+	CheckError(cudaMemcpy(targets, d_targets, m_batchSize*m_outputDim*sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);
+	CheckError(cudaMemcpy(output, m_d_output, m_batchSize*m_outputDim*sizeof(float), cudaMemcpyDeviceToHost), __FILE__, __LINE__);
+
+	for (int i = 0; i < m_batchSize; i++) {
 		float sum = 0.f;
-		for (int i = 0; i < getOutputDim(); i++) {
-			float z = output[i] - target[i];
+		for (int j = 0; j < getOutputDim(); j++) {
+			float z = output[i*getOutputDim()+j] - targets[i*getOutputDim() + j];
 			sum += z*z;
 		}
 		sum /= getOutputDim();
 		batchError += sum;
-	}*/
+	}
 	batchError /= m_batchSize;
 
 	/*if (FLAGS_DEBUG) {

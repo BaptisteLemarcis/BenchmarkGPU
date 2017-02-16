@@ -11,6 +11,7 @@
 #include <vector>
 #include <tuple>
 
+#include "ConfusionMatrix.h"
 #include "Layer.h"
 #include "Network.h"
 #include "Logger.h"
@@ -169,7 +170,7 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 		std::vector<float*> d_output;
 
 		// Forward pass + get error
-		auto resultFwd = forward(d_bTargets, d_bTargets, d_onevec, &d_output);
+		auto errorBatch = forward(d_bData, d_bTargets, d_onevec, &d_output, true);
 
 		CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
@@ -185,12 +186,12 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 
 		toWrite.str("");
 		toWrite.clear();
-		toWrite << "\tBatch Error " << resultFwd;
+		toWrite << "\tBatch Error " << errorBatch;
 		Logger::instance()->writeLine(toWrite.str());
 
-		error += resultFwd;
+		error += errorBatch;
 		
-		//validateBatch();
+		validateBatch(d_bData, d_bTargets, d_onevec);
 		CheckError(cudaDeviceSynchronize(), __FILE__, __LINE__);
 
 		/*for (auto o : d_output) {
@@ -208,19 +209,20 @@ void Network::trainEpoch(int epoch, int nbEpoch, int nbBatch, int nbData, float*
 	Logger::instance()->writeLine(toWrite.str());
 }
 
-float Network::forward(float* d_input, float* d_target, float* d_onevec, std::vector<float*>* d_output)
+float Network::forward(float* d_input, float* d_target, float* d_onevec, std::vector<float*>* d_output, bool training)
 {
 	float error = 0;
 	std::vector<std::reference_wrapper<Layer>>::iterator it = m_layers.begin();
 	
-	std::tuple<float, float*> result = it->get().forward(m_handle, m_cublasHandle, d_input, d_target, d_onevec);
+	std::tuple<float, float*> result = it->get().forward(m_handle, m_cublasHandle, d_input, d_target, d_onevec, training);
 	d_output->push_back(std::get<1>(result));
 	it++;
 	for (; it != m_layers.end(); ++it) {
-		result = it->get().forward(m_handle, m_cublasHandle, d_output->back(), d_target, d_onevec);
+		result = it->get().forward(m_handle, m_cublasHandle, d_output->back(), d_target, d_onevec, training);
 		d_output->push_back(std::get<1>(result));
 		error += std::get<0>(result);
 	}
+	m_matrix.evaluate(std::get<1>(result), d_target, m_batchSize, m_outputDim);
 	return error;
 }
 
@@ -245,7 +247,10 @@ void Network::backward(std::vector<float*>& fwdOutput, float* target, float* d_o
 	CheckError(cudaFree(d_loss_data), __FILE__, __LINE__);
 }
 
-void Network::validateBatch()
+void Network::validateBatch(float* d_input, float* d_target, float* d_onevec)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	std::vector<float*> d_output;
+	forward(d_input, d_target, d_onevec, &d_output, false);
+	float* d_res = d_output.back();
+	//m_matrix.evaluate(d_res, d_target, m_batchSize, m_outputDim);
 }

@@ -171,6 +171,7 @@ del *.iobj</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Benchmark.cpp" />
+    <ClCompile Include="ConfusionMatrix.cpp" />
     <ClCompile Include="FullyConnectedLayer.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
@@ -190,6 +191,7 @@ del *.iobj</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConfusionMatrix.h" />
     <ClInclude Include="FullyConnectedLayer.h" />
     <ClInclude Include="GenericFunctions.h" />
     <ClInclude Include="GPUKernel.cuh" />

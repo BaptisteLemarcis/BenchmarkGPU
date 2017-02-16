@@ -30,8 +30,9 @@ public:
 	*	\param input - Number of features
 	*	\param targets -
 	*	\param d_onevec -
+	*	\param training -
 	*/
-	virtual std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float*, float*) = 0;
+	virtual std::tuple<float, float*> forward(cudnnHandle_t&, cublasHandle_t&, float*, float*, float*, bool) = 0;
 	
 	/**
 	*	\brief .
